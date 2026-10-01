@@ -22,6 +22,9 @@ string dataT = "";
 bool appNorm = false;
 bool isMC = false;
 
+gROOT->ForceStyle();
+gStyle->SetOptStat(0);
+
 void normalize(TH1 *h){
   h->Scale(1/h->Integral());
   h->GetYaxis()->SetTitle(Form("%s (normalized)",h->GetYaxis()->GetTitle()));
@@ -47,26 +50,47 @@ TCanvas *superimposeHisto(TFile *f, string nameHisto, string folder1, string fol
   if(!log) h1->SetMinimum(0.);
 
   // dimension of labels and titles
-  h1->GetXaxis()->SetLabelSize(0.04);
-  h1->GetYaxis()->SetLabelSize(0.04);
-  h1->GetXaxis()->SetTitleSize(0.04);
-  h1->GetYaxis()->SetTitleSize(0.04);
+  h1->GetXaxis()->SetLabelSize(0.05);
+  h1->GetYaxis()->SetLabelSize(0.05);
+  h1->GetXaxis()->SetTitleSize(0.05);
+  h1->GetYaxis()->SetTitleSize(0.05);
   h1->GetXaxis()->SetTitleOffset(1.1);
 
   h1->SetLineWidth(2);
   h2->SetLineWidth(2);
 
-  h1->SetLineColor(kRed);
-  h2->SetLineColor(kBlack);
+  h1->SetLineColor(kRed+1);
+  h2->SetLineColor(kAzure+2);
     
   cout<<h1->GetXaxis()->GetNbins()<<" "<<h2->GetXaxis()->GetNbins()<<endl;
   // draw in canvas
   TCanvas *c = new TCanvas(Form("superimposed:%s",nameHisto.c_str()),nameHisto.c_str(),1920,1080);
-  c->Divide(1,2);
-  c->cd(1);
+
+  gStyle->SetGridColor(kGray+3);
+
+  // TPad(name, title, xlow, ylow, xup, yup)
+  TPad *pad1 = new TPad("pad1", "top",    0, 0.30, 1, 1.00);  // top: 70% of height
+  TPad *pad2 = new TPad("pad2", "bottom", 0, 0.00, 1, 0.30);  // bottom: 30% of height
+
+  // margins
+  pad1->SetBottomMargin(0.02);
+  pad2->SetTopMargin(0.02);
+  pad2->SetBottomMargin(0.30);   // room for the x-axis labels/title
+
+  pad1->Draw();
+  pad2->Draw();
+
+  pad1->cd();
   gPad->SetLogy(log);
+  gPad->SetTicks();
+  gPad->SetGrid();
+
   h1->Draw();
-  h2->Draw("same");   
+  h2->Draw("same");
+
+  h1->GetXaxis()->SetLabelSize(0.0);
+  h1->GetXaxis()->SetTitleSize(0.0);
+
   // add legend
   TLegend *legend = new TLegend(0.7,0.77,0.98,0.94);
   legend->SetBorderSize(0);
@@ -74,10 +98,25 @@ TCanvas *superimposeHisto(TFile *f, string nameHisto, string folder1, string fol
   legend->AddEntry(h2,label2.c_str(),"l");
   legend->Draw();
 
-  c->cd(2);
+  pad2->cd();
+  gPad->SetTicks();
+  gPad->SetGrid();
+
   TH1D *hRatio = (TH1D*)h1->Clone("Ratio");
-  hRatio->SetTitle("Ratio");
+  //hRatio->SetTitle("Ratio");
   hRatio->Divide(h2,h1,1,1,"B");
+  hRatio->GetYaxis()->SetNdivisions(505);
+
+  double scale = 0.70 / 0.30;   // top pad height / bottom pad height
+
+  hRatio->GetXaxis()->SetLabelSize(0.045 * scale);
+  hRatio->GetXaxis()->SetTitleSize(0.05  * scale);
+  hRatio->GetXaxis()->SetTitleOffset(1.0 / scale * 2.5);
+
+  hRatio->GetYaxis()->SetLabelSize(0.045 * scale);
+  hRatio->GetYaxis()->SetTitleSize(0.05  * scale);
+  hRatio->GetYaxis()->SetTitleOffset(1.0 / scale);
+
   if(isMC) hRatio->SetMaximum(TMath::Min(1.2*hRatio->GetMaximum(),1.));
   hRatio->GetYaxis()->SetTitle("Ratio");
 
